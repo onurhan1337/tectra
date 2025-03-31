@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { FormTemplate } from "@/lib/types";
 import { dbFormTemplateToAppTemplate } from "@/lib/transformers";
 import { createForm } from "./form-service";
+import { showToast } from "@/lib/toast";
 
 // Cache duration: 60 seconds
 const CACHE_DURATION = 60;
@@ -25,6 +26,7 @@ export const getFormTemplates = unstable_cache(
 
       if (error) {
         console.error("Error getting form templates:", error);
+        showToast.error(`Failed to get form templates: ${error.message}`);
         throw new Error(`Failed to get form templates: ${error.message}`);
       }
 
@@ -60,6 +62,7 @@ export const getFormTemplateById = unstable_cache(
           return null;
         }
         console.error("Error getting form template:", error);
+        showToast.error(`Failed to get form template: ${error.message}`);
         throw new Error(`Failed to get form template: ${error.message}`);
       }
 
@@ -101,6 +104,7 @@ export async function createFormTemplate(
 
     if (error) {
       console.error("Error creating form template:", error);
+      showToast.error(`Failed to create form template: ${error.message}`);
       throw new Error(`Failed to create form template: ${error.message}`);
     }
 
@@ -131,6 +135,7 @@ export async function createFormFromTemplate(
     const template = await getFormTemplateById(templateId);
 
     if (!template) {
+      showToast.error(`Template with ID ${templateId} not found`);
       throw new Error(`Template with ID ${templateId} not found`);
     }
 
@@ -182,6 +187,7 @@ export async function updateFormTemplate(
 
     if (error) {
       console.error("Error updating form template:", error);
+      showToast.error(`Failed to update form template: ${error.message}`);
       throw new Error(`Failed to update form template: ${error.message}`);
     }
 
@@ -208,6 +214,7 @@ export async function deleteFormTemplate(templateId: string) {
 
     if (error) {
       console.error("Error deleting form template:", error);
+      showToast.error(`Failed to delete form template: ${error.message}`);
       throw new Error(`Failed to delete form template: ${error.message}`);
     }
 

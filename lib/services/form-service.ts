@@ -5,7 +5,7 @@ import {
   dbFormToAppForm,
   dbSubmissionToAppSubmission,
 } from "@/lib/transformers";
-import { notify } from "../notify";
+import { showToast } from "@/lib/toast";
 
 // Cache duration: 60 seconds
 const CACHE_DURATION = 60;
@@ -34,7 +34,7 @@ export const getForms = unstable_cache(
 
       if (error) {
         console.error("Error getting forms:", error);
-        notify.error(`Failed to get forms: ${error.message}`);
+        showToast.error(`Failed to get forms: ${error.message}`);
         throw new Error(`Failed to get forms: ${error.message}`);
       }
 
@@ -70,7 +70,7 @@ export const getFormById = unstable_cache(
           return null;
         }
         console.error("Error getting form:", error);
-        notify.error(`Failed to get form: ${error.message}`);
+        showToast.error(`Failed to get form: ${error.message}`);
         throw new Error(`Failed to get form: ${error.message}`);
       }
 
@@ -219,7 +219,7 @@ export const getFormSubmissions = unstable_cache(
 
       if (error) {
         console.error("Error getting form submissions:", error);
-        notify.error(`Failed to get form submissions: ${error.message}`);
+        showToast.error(`Failed to get form submissions: ${error.message}`);
         throw new Error(`Failed to get form submissions: ${error.message}`);
       }
 

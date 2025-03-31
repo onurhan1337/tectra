@@ -1,7 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import { NotificationType } from "./notify";
+
+export type NotificationType = "success" | "error" | "info" | "warning";
 
 type ActionProps = {
   label: string;
