@@ -9,49 +9,77 @@ const CACHE_DURATION = 60;
 
 /**
  * Get all form templates for a user
+ * @param userId - ID of the user whose templates to retrieve
+ * @returns Array of form templates
  */
 export const getFormTemplates = unstable_cache(
   async (userId: string) => {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from("form_templates")
-      .select("*")
-      .eq("created_by", userId)
-      .order("updated_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("form_templates")
+        .select("*")
+        .eq("created_by", userId)
+        .order("updated_at", { ascending: false });
 
-    if (error) throw error;
+      if (error) {
+        console.error("Error getting form templates:", error);
+        throw new Error(`Failed to get form templates: ${error.message}`);
+      }
 
-    return data.map(dbFormTemplateToAppTemplate);
+      return data.map(dbFormTemplateToAppTemplate);
+    } catch (error) {
+      console.error("Error in getFormTemplates:", error);
+      throw error;
+    }
   },
-  ["templates-list"],
+  ["form-templates-list"],
   { revalidate: CACHE_DURATION, tags: ["templates"] }
 );
 
 /**
  * Get a specific template by ID
+ * @param templateId - ID of the template to retrieve
+ * @returns The form template or null if not found
  */
 export const getFormTemplateById = unstable_cache(
   async (templateId: string) => {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from("form_templates")
-      .select("*")
-      .eq("id", templateId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("form_templates")
+        .select("*")
+        .eq("id", templateId)
+        .single();
 
-    if (error) throw error;
-    if (!data) return null;
+      if (error) {
+        // Don't treat not found as an error to throw
+        if (error.code === "PGRST116") {
+          return null;
+        }
+        console.error("Error getting form template:", error);
+        throw new Error(`Failed to get form template: ${error.message}`);
+      }
 
-    return dbFormTemplateToAppTemplate(data);
+      if (!data) return null;
+
+      return dbFormTemplateToAppTemplate(data);
+    } catch (error) {
+      console.error("Error in getFormTemplateById:", error);
+      throw error;
+    }
   },
-  ["template-by-id"],
+  ["form-template-by-id"],
   { revalidate: CACHE_DURATION, tags: ["templates"] }
 );
 
 /**
  * Create a new form template
+ * @param userId - ID of the user creating the template
+ * @param template - The template data to create
+ * @returns The created form template
  */
 export async function createFormTemplate(
   userId: string,
@@ -77,6 +105,12 @@ export async function createFormTemplate(
 
 /**
  * Create a form based on a template
+ * @param userId - ID of the user creating the form
+ * @param templateId - ID of the template to use
+ * @param name - Name for the new form
+ * @param description - Optional description for the new form
+ * @returns The created form
+ * @throws Error if template not found
  */
 export async function createFormFromTemplate(
   userId: string,
@@ -101,6 +135,9 @@ export async function createFormFromTemplate(
 
 /**
  * Update an existing form template
+ * @param templateId - ID of the template to update
+ * @param updates - Partial template data to update
+ * @returns The updated form template
  */
 export async function updateFormTemplate(
   templateId: string,
@@ -108,24 +145,34 @@ export async function updateFormTemplate(
 ) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("form_templates")
-    .update({
+  // Create update object with only the defined fields
+  const updateData = Object.fromEntries(
+    Object.entries({
       name: updates.name,
       description: updates.description,
       fields: updates.fields,
-    })
+    }).filter(([_, value]) => value !== undefined)
+  );
+
+  const { data, error } = await supabase
+    .from("form_templates")
+    .update(updateData)
     .eq("id", templateId)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error updating form template:", error);
+    throw new Error(`Failed to update form template: ${error.message}`);
+  }
 
   return dbFormTemplateToAppTemplate(data);
 }
 
 /**
  * Delete a form template
+ * @param templateId - ID of the template to delete
+ * @returns true if deletion was successful
  */
 export async function deleteFormTemplate(templateId: string) {
   const supabase = await createClient();

@@ -13,46 +13,72 @@ const CACHE_DURATION = 60;
 /**
  * Get all forms for a user with optional status filter
  * Uses unstable_cache for improved performance on repeated requests
+ * @param userId - ID of the user whose forms to retrieve
+ * @param status - Optional status filter
+ * @returns Array of forms
  */
 export const getForms = unstable_cache(
   async (userId: string, status?: FormStatus) => {
     const supabase = await createClient();
 
-    let query = supabase.from("forms").select("*").eq("created_by", userId);
+    try {
+      let query = supabase.from("forms").select("*").eq("created_by", userId);
 
-    if (status) {
-      query = query.eq("status", status);
+      if (status) {
+        query = query.eq("status", status);
+      }
+
+      const { data, error } = await query.order("updated_at", {
+        ascending: false,
+      });
+
+      if (error) {
+        console.error("Error getting forms:", error);
+        throw new Error(`Failed to get forms: ${error.message}`);
+      }
+
+      return data.map(dbFormToAppForm);
+    } catch (error) {
+      console.error("Error in getForms:", error);
+      throw error;
     }
-
-    const { data, error } = await query.order("updated_at", {
-      ascending: false,
-    });
-
-    if (error) throw error;
-
-    return data.map(dbFormToAppForm);
   },
-  ["forms-list"],
+  ["form-list"],
   { revalidate: CACHE_DURATION, tags: ["forms"] }
 );
 
 /**
  * Get a specific form by ID
+ * @param formId - ID of the form to retrieve
+ * @returns The form or null if not found
  */
 export const getFormById = unstable_cache(
   async (formId: string) => {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from("forms")
-      .select("*")
-      .eq("id", formId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("forms")
+        .select("*")
+        .eq("id", formId)
+        .single();
 
-    if (error) throw error;
-    if (!data) return null;
+      if (error) {
+        // Don't treat not found as an error to throw
+        if (error.code === "PGRST116") {
+          return null;
+        }
+        console.error("Error getting form:", error);
+        throw new Error(`Failed to get form: ${error.message}`);
+      }
 
-    return dbFormToAppForm(data);
+      if (!data) return null;
+
+      return dbFormToAppForm(data);
+    } catch (error) {
+      console.error("Error in getFormById:", error);
+      throw error;
+    }
   },
   ["form-by-id"],
   { revalidate: CACHE_DURATION, tags: ["forms"] }
@@ -60,6 +86,9 @@ export const getFormById = unstable_cache(
 
 /**
  * Create a new form
+ * @param userId - ID of the user creating the form
+ * @param form - The form data to create
+ * @returns The created form
  */
 export async function createForm(
   userId: string,
@@ -70,21 +99,29 @@ export async function createForm(
 ) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("forms")
-    .insert({
-      created_by: userId,
-      name: form.name,
-      description: form.description,
-      fields: form.fields,
-      status: "draft",
-    })
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("forms")
+      .insert({
+        created_by: userId,
+        name: form.name,
+        description: form.description,
+        fields: form.fields,
+        status: "draft",
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
+    if (error) {
+      console.error("Error creating form:", error);
+      throw new Error(`Failed to create form: ${error.message}`);
+    }
 
-  return dbFormToAppForm(data);
+    return dbFormToAppForm(data);
+  } catch (error) {
+    console.error("Error in createForm:", error);
+    throw error;
+  }
 }
 
 /**
@@ -98,60 +135,88 @@ export async function updateForm(
 ) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("forms")
-    .update({
+  // Create update object with only the defined fields
+  const updateData = Object.fromEntries(
+    Object.entries({
       name: updates.name,
       description: updates.description,
       fields: updates.fields,
       status: updates.status,
-    })
+    }).filter(([_, value]) => value !== undefined)
+  );
+
+  const { data, error } = await supabase
+    .from("forms")
+    .update(updateData)
     .eq("id", formId)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error updating form:", error);
+    throw new Error(`Failed to update form: ${error.message}`);
+  }
 
   return dbFormToAppForm(data);
 }
 
 /**
  * Publish a form
+ * @param formId - ID of the form to publish
+ * @returns The published form
  */
 export async function publishForm(formId: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("forms")
-    .update({
-      status: "published",
-      published_at: new Date().toISOString(),
-    })
-    .eq("id", formId)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("forms")
+      .update({
+        status: "published",
+        published_at: new Date().toISOString(),
+      })
+      .eq("id", formId)
+      .select()
+      .single();
 
-  if (error) throw error;
+    if (error) {
+      console.error("Error publishing form:", error);
+      throw new Error(`Failed to publish form: ${error.message}`);
+    }
 
-  return dbFormToAppForm(data);
+    return dbFormToAppForm(data);
+  } catch (error) {
+    console.error("Error in publishForm:", error);
+    throw error;
+  }
 }
 
 /**
  * Get all submissions for a form
+ * @param formId - ID of the form whose submissions to retrieve
+ * @returns Array of form submissions
  */
 export const getFormSubmissions = unstable_cache(
   async (formId: string) => {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
-      .from("form_submissions")
-      .select("*")
-      .eq("form_id", formId)
-      .order("submitted_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("form_submissions")
+        .select("*")
+        .eq("form_id", formId)
+        .order("submitted_at", { ascending: false });
 
-    if (error) throw error;
+      if (error) {
+        console.error("Error getting form submissions:", error);
+        throw new Error(`Failed to get form submissions: ${error.message}`);
+      }
 
-    return data.map(dbSubmissionToAppSubmission);
+      return data.map(dbSubmissionToAppSubmission);
+    } catch (error) {
+      console.error("Error in getFormSubmissions:", error);
+      throw error;
+    }
   },
   ["form-submissions"],
   { revalidate: CACHE_DURATION, tags: ["submissions"] }
