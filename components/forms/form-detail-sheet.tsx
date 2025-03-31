@@ -27,11 +27,15 @@ import {
   ExternalLink,
   Share2,
   ChevronRight,
+  Save,
+  BookTemplate,
+  Loader2,
 } from "lucide-react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import { useForm, useUpdateFormStatus } from "@/lib/hooks/use-forms";
 import { FormStatus } from "@/lib/types";
+import { SaveAsTemplateDialog } from "@/components/templates/save-as-template-dialog";
 
 interface FormDetailSheetProps {
   formId: string;
@@ -53,6 +57,7 @@ export function FormDetailSheet({
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false);
 
   // Use React Query hooks
   const { data: form, isLoading, refetch } = useForm(formId);
@@ -333,6 +338,21 @@ export function FormDetailSheet({
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between border-border/40 h-11 hover:bg-muted/10"
+                    onClick={() => setSaveAsTemplateOpen(true)}
+                  >
+                    <div className="flex items-center">
+                      <div className="bg-primary/5 p-1.5 rounded-md mr-3">
+                        <BookTemplate className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="font-medium">Save as Template</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </Button>
                 </div>
               </div>
             </div>
@@ -351,6 +371,22 @@ export function FormDetailSheet({
           </div>
         )}
       </SheetContent>
+
+      {form && (
+        <SaveAsTemplateDialog
+          open={saveAsTemplateOpen}
+          onOpenChange={setSaveAsTemplateOpen}
+          formId={form.id}
+          formName={form.name}
+          formDescription={form.description || ""}
+          onSuccess={() => {
+            setNotification({
+              type: "success",
+              message: "Template created successfully",
+            });
+          }}
+        />
+      )}
     </Sheet>
   );
 }

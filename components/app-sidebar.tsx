@@ -2,26 +2,15 @@
 
 import * as React from "react";
 import {
-  BookOpen,
-  Bot,
-  Command,
   BarChart2,
-  LifeBuoy,
-  Layout,
-  PieChart,
-  Send,
-  Settings2,
-  SquareTerminal,
+  BookTemplate,
   FileText,
-  Home,
-  Grid,
-  ScrollText,
-  Users,
   FormInput,
+  Home,
+  Settings2,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
@@ -32,6 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { SidebarCreditSection } from "./sidebar-credit-section";
 
 const data = {
   navMain: [
@@ -51,7 +41,7 @@ const data = {
     {
       title: "Templates",
       url: "/dashboard/templates",
-      icon: Grid,
+      icon: BookTemplate,
       items: [],
     },
     {
@@ -65,18 +55,6 @@ const data = {
       url: "/dashboard/settings",
       icon: Settings2,
       items: [],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Documentation",
-      url: "/dashboard/documentation",
-      icon: BookOpen,
-    },
-    {
-      title: "Support",
-      url: "/dashboard/support",
-      icon: LifeBuoy,
     },
   ],
 };
@@ -120,9 +98,11 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>{userData && <NavUser user={userData} />}</SidebarFooter>
+      <SidebarFooter>
+        <SidebarCreditSection />
+        {userData && <NavUser user={userData} />}
+      </SidebarFooter>
     </Sidebar>
   );
 }

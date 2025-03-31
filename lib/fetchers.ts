@@ -109,3 +109,24 @@ export async function fetchFormById(formId: string): Promise<any> {
     throw error;
   }
 }
+
+/**
+ * Fetch templates for a user
+ * @param userId User ID
+ * @returns Array of templates
+ */
+export async function fetchTemplates(userId?: string) {
+  const response = await fetch(`/api/templates?userId=${userId || ""}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch templates");
+  }
+
+  const data = await response.json();
+  return data.templates;
+}

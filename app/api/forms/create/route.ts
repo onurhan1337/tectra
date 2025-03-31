@@ -22,12 +22,7 @@ export async function POST(req: NextRequest) {
     let createdForm;
 
     if (templateId) {
-      createdForm = await createFormFromTemplate(
-        user.id,
-        templateId,
-        form.name,
-        form.description
-      );
+      createdForm = await createFormFromTemplate(templateId, user.id);
     } else {
       createdForm = await createForm(
         user.id,
@@ -39,7 +34,8 @@ export async function POST(req: NextRequest) {
           | "updatedAt"
           | "publishedAt"
           | "archivedAt"
-        >
+        >,
+        templateId
       );
     }
 

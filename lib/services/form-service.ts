@@ -90,6 +90,7 @@ export const getFormById = unstable_cache(
  * Create a new form
  * @param userId - ID of the user creating the form
  * @param form - The form data to create
+ * @param templateId - Optional ID of the template used to create the form
  * @returns The created form
  */
 export async function createForm(
@@ -97,7 +98,8 @@ export async function createForm(
   form: Omit<
     Form,
     "id" | "status" | "createdAt" | "updatedAt" | "publishedAt" | "archivedAt"
-  >
+  >,
+  templateId?: string
 ) {
   const supabase = await createClient();
 
@@ -110,6 +112,7 @@ export async function createForm(
         description: form.description,
         fields: form.fields,
         status: "draft",
+        template_id: templateId || null,
       })
       .select()
       .single();

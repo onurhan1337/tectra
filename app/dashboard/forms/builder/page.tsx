@@ -122,6 +122,67 @@ export default function FormBuilderPage() {
     updatedAt: new Date(),
   });
 
+  // Load template data when templateId is provided
+  useEffect(() => {
+    async function loadTemplateData() {
+      if (!templateId) return;
+
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) return;
+
+        // Fetch template from database
+        const { data, error } = await supabase
+          .from("form_templates")
+          .select("*")
+          .eq("id", templateId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching template:", error);
+          return;
+        }
+
+        if (data) {
+          // Ensure fields are properly processed
+          const templateFields = Array.isArray(data.fields)
+            ? data.fields.map((field: Partial<FormField>) => {
+                // Make sure each field has an id
+                if (!field.id) {
+                  field.id = generateId();
+                }
+
+                // Ensure validation object exists with required property
+                if (!field.validation) {
+                  field.validation = { required: false };
+                } else if (typeof field.validation.required === "undefined") {
+                  field.validation.required = false;
+                }
+
+                return field as FormField;
+              })
+            : [];
+
+          // Update form with template data
+          setForm((prev) => ({
+            ...prev,
+            name: data.name || "Untitled Form",
+            description: data.description || "",
+            fields: templateFields,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to load template data:", error);
+      }
+    }
+
+    loadTemplateData();
+  }, [templateId]);
+
   const handleSave = async () => {
     setIsSaving(true);
 

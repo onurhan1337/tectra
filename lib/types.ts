@@ -76,6 +76,9 @@ export const FormTemplateSchema = z.object({
     .date()
     .optional()
     .default(() => new Date()),
+  isPremium: z.boolean().optional(),
+  price: z.number().optional(),
+  previewImageUrl: z.string().optional(),
 });
 
 export type FormTemplate = z.infer<typeof FormTemplateSchema>;
@@ -108,3 +111,31 @@ export const FormSchema = z.object({
 });
 
 export type Form = z.infer<typeof FormSchema>;
+
+export interface UserCredit {
+  id: string;
+  userId: string;
+  amount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type TransactionType = "purchase" | "usage" | "refund";
+
+export interface CreditTransaction {
+  id: string;
+  userId: string;
+  amount: number;
+  transactionType: TransactionType;
+  referenceId: string | null;
+  description: string | null;
+  createdAt: Date;
+}
+
+export interface PurchasedTemplate {
+  id: string;
+  userId: string;
+  templateId: string;
+  pricePaid: number;
+  createdAt: Date;
+}

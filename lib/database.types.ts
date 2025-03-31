@@ -18,6 +18,9 @@ export interface Database {
           fields: Json;
           created_at: string;
           updated_at: string;
+          is_premium: boolean | null;
+          price: number | null;
+          preview_image_url: string | null;
         };
         Insert: {
           id?: string;
@@ -27,6 +30,9 @@ export interface Database {
           fields?: Json;
           created_at?: string;
           updated_at?: string;
+          is_premium?: boolean | null;
+          price?: number | null;
+          preview_image_url?: string | null;
         };
         Update: {
           id?: string;
@@ -36,6 +42,9 @@ export interface Database {
           fields?: Json;
           created_at?: string;
           updated_at?: string;
+          is_premium?: boolean | null;
+          price?: number | null;
+          preview_image_url?: string | null;
         };
       };
       forms: {
@@ -192,6 +201,81 @@ export interface Database {
           referer?: string | null;
           user_agent?: string | null;
           event_type?: string;
+          created_at?: string;
+        };
+      };
+      user_credits: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      credit_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          transaction_type: "purchase" | "usage" | "refund";
+          reference_id: string | null;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          transaction_type: "purchase" | "usage" | "refund";
+          reference_id?: string | null;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          transaction_type?: "purchase" | "usage" | "refund";
+          reference_id?: string | null;
+          description?: string | null;
+          created_at?: string;
+        };
+      };
+      purchased_templates: {
+        Row: {
+          id: string;
+          user_id: string;
+          template_id: string;
+          price_paid: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          template_id: string;
+          price_paid: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          template_id?: string;
+          price_paid?: number;
           created_at?: string;
         };
       };
