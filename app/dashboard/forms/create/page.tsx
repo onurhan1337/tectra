@@ -108,7 +108,7 @@ export default function CreateFormPage() {
             Back to Forms
           </Link>
           <h1 className="text-3xl font-bold">Create a New Form</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground -tracking-wide">
             Start with a template or create from scratch
           </p>
         </div>

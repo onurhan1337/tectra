@@ -83,7 +83,9 @@ export type FormTemplate = z.infer<typeof FormTemplateSchema>;
 export const FormSubmissionSchema = z.object({
   id: z.string(),
   formId: z.string(),
+  submitterIp: z.string().nullable(),
   data: z.record(z.any()),
+  metadata: z.record(z.any()).optional(),
   submittedAt: z.date().default(() => new Date()),
 });
 

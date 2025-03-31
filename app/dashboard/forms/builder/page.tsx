@@ -22,6 +22,7 @@ import { Form, FormSchema, FormField, FormFieldSchema } from "@/lib/types";
 import { FormBuilder } from "@/components/form-builder/form-builder";
 import { FormPreview } from "@/components/form-builder/form-preview";
 import { FormSettings } from "@/components/form-builder/form-settings";
+import { createClient } from "@/utils/supabase/client";
 
 const generateId = () =>
   `id-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -121,28 +122,45 @@ export default function FormBuilderPage() {
     updatedAt: new Date(),
   });
 
-  useEffect(() => {
-    if (templateId && templates[templateId as keyof typeof templates]) {
-      const template = templates[templateId as keyof typeof templates];
-      setForm({
-        ...form,
-        name: template.name,
-        description: template.description,
-        fields: template.fields as FormField[],
-      });
-    }
-  }, [templateId]);
-
   const handleSave = async () => {
     setIsSaving(true);
 
     try {
       const validatedForm = FormSchema.parse(form);
-      console.log("Form saved:", validatedForm);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await fetch("/api/forms/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          form: {
+            name: validatedForm.name,
+            description: validatedForm.description,
+            fields: validatedForm.fields,
+          },
+          templateId: templateId || undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to save form");
+      }
+
       router.push("/dashboard/forms");
     } catch (error) {
-      console.error("Form validation error:", error);
+      console.error("Form save error:", error);
     } finally {
       setIsSaving(false);
     }
