@@ -1,12 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import {
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash,
-  FileDown,
-  Settings,
-} from "lucide-react";
+import { useState, useRef } from "react";
+import { MoreHorizontal, Eye, Edit, Trash, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,7 +20,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "./status-badge";
 import { FormDetailSheet } from "./form-detail-sheet";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { showToast } from "@/lib/toast";
 
 interface FormData {
   id: string;
@@ -41,9 +39,77 @@ interface FormCardProps {
 }
 
 export function FormCard({ form, mutate }: FormCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
+  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const formattedDate = form.lastSubmission
     ? new Date(form.lastSubmission).toLocaleDateString()
     : null;
+
+  const deleteFormClient = async (formId: string) => {
+    const supabase = createClient();
+
+    const { error } = await supabase.from("forms").delete().eq("id", formId);
+
+    if (error) {
+      throw new Error(`Failed to delete form: ${error.message}`);
+    }
+
+    return true;
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDeleting(true);
+
+    showToast.promise(
+      new Promise<boolean>((resolve, reject) => {
+        showToast.message(`Deleting form "${form.name}"...`, {
+          description:
+            "This action will delete the form and all its submissions.",
+          action: {
+            label: "Undo",
+            onClick: () => {
+              if (deleteTimeoutRef.current) {
+                clearTimeout(deleteTimeoutRef.current);
+                deleteTimeoutRef.current = null;
+                setIsDeleting(false);
+                showToast.success(`Deletion of "${form.name}" canceled`);
+                reject(new Error("Deletion canceled"));
+              }
+            },
+          },
+          duration: 5000,
+        });
+
+        deleteTimeoutRef.current = setTimeout(async () => {
+          try {
+            await deleteFormClient(form.id);
+            setIsDeleting(false);
+            deleteTimeoutRef.current = null;
+
+            if (mutate) {
+              mutate();
+            } else {
+              router.refresh();
+            }
+            resolve(true);
+          } catch (error) {
+            console.error("Error deleting form:", error);
+            setIsDeleting(false);
+            deleteTimeoutRef.current = null;
+            reject(error);
+          }
+        }, 5000);
+      }),
+      {
+        loading: `Deleting form "${form.name}"...`,
+        success: `Form "${form.name}" deleted successfully`,
+        error: `Failed to delete form`,
+      }
+    );
+  };
 
   return (
     <FormDetailSheet formId={form.id} mutate={mutate}>
@@ -84,9 +150,13 @@ export function FormCard({ form, mutate }: FormCardProps) {
                       Export
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                    >
                       <Trash className="mr-2 h-4 w-4" />
-                      Delete
+                      {isDeleting ? "Deleting..." : "Delete"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

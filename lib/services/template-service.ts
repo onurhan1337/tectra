@@ -87,20 +87,28 @@ export async function createFormTemplate(
 ) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("form_templates")
-    .insert({
-      created_by: userId,
-      name: template.name,
-      description: template.description,
-      fields: template.fields,
-    })
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("form_templates")
+      .insert({
+        created_by: userId,
+        name: template.name,
+        description: template.description,
+        fields: template.fields,
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
+    if (error) {
+      console.error("Error creating form template:", error);
+      throw new Error(`Failed to create form template: ${error.message}`);
+    }
 
-  return dbFormTemplateToAppTemplate(data);
+    return dbFormTemplateToAppTemplate(data);
+  } catch (error) {
+    console.error("Error in createFormTemplate:", error);
+    throw error;
+  }
 }
 
 /**
@@ -118,19 +126,29 @@ export async function createFormFromTemplate(
   name: string,
   description?: string
 ) {
-  // Get the template
-  const template = await getFormTemplateById(templateId);
+  try {
+    // Get the template
+    const template = await getFormTemplateById(templateId);
 
-  if (!template) {
-    throw new Error("Template not found");
+    if (!template) {
+      throw new Error(`Template with ID ${templateId} not found`);
+    }
+
+    // Create a new form using the template fields
+    const form = await createForm(userId, {
+      name,
+      description,
+      fields: template.fields,
+    });
+
+    return form;
+  } catch (error) {
+    console.error("Error in createFormFromTemplate:", error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to create form from template");
   }
-
-  // Create a new form using the template fields
-  return createForm(userId, {
-    name,
-    description,
-    fields: template.fields,
-  });
 }
 
 /**
@@ -154,19 +172,24 @@ export async function updateFormTemplate(
     }).filter(([_, value]) => value !== undefined)
   );
 
-  const { data, error } = await supabase
-    .from("form_templates")
-    .update(updateData)
-    .eq("id", templateId)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("form_templates")
+      .update(updateData)
+      .eq("id", templateId)
+      .select()
+      .single();
 
-  if (error) {
-    console.error("Error updating form template:", error);
-    throw new Error(`Failed to update form template: ${error.message}`);
+    if (error) {
+      console.error("Error updating form template:", error);
+      throw new Error(`Failed to update form template: ${error.message}`);
+    }
+
+    return dbFormTemplateToAppTemplate(data);
+  } catch (error) {
+    console.error("Error in updateFormTemplate:", error);
+    throw error;
   }
-
-  return dbFormTemplateToAppTemplate(data);
 }
 
 /**
@@ -177,12 +200,20 @@ export async function updateFormTemplate(
 export async function deleteFormTemplate(templateId: string) {
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from("form_templates")
-    .delete()
-    .eq("id", templateId);
+  try {
+    const { error } = await supabase
+      .from("form_templates")
+      .delete()
+      .eq("id", templateId);
 
-  if (error) throw error;
+    if (error) {
+      console.error("Error deleting form template:", error);
+      throw new Error(`Failed to delete form template: ${error.message}`);
+    }
 
-  return true;
+    return true;
+  } catch (error) {
+    console.error("Error in deleteFormTemplate:", error);
+    throw error;
+  }
 }

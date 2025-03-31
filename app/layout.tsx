@@ -1,6 +1,7 @@
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { QueryProvider } from "@/lib/providers/query-provider";
+import { ToastProvider } from "@/lib/providers/toast-provider";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -33,6 +34,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>{children}</QueryProvider>
+          <ToastProvider />
         </ThemeProvider>
       </body>
     </html>
